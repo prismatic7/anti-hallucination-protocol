@@ -122,6 +122,53 @@ Host note: on the Linux host, `python3` resolves to linuxbrew 3.14.7 without
 PyYAML, while `/usr/bin/python3` (3.13.5) has it. This is precisely the condition
 that produced the collapse above.
 
+## Boot hook: `skills.auto_load`
+
+Upstream's README requires the skill to be explicitly loaded before consequential
+work in every session, and assumes a `/start` boot skill to edit. Neither target
+host has a `/start` skill (`~/.hermes/skills/get-oriented/` is the closest thing
+and is not a boot loader), and `hooks.on_session_start` runs external commands
+rather than loading skills.
+
+The mechanism that actually exists in Hermes is `skills.auto_load`:
+
+```yaml
+skills:
+  auto_load:
+    - anti-hallucination-protocol
+```
+
+`hermes_cli/config_defaults.py` describes it as "Skill names pinned as fully
+loaded in every new session (CLI, TUI, gateway, cron, API)", resolved once per
+agent lifecycle and injected as full skill blocks into the system prompt. Its
+default is `[]`, and the injected block carries the standard line: "Treat its
+instructions as active guidance for the duration of this session unless the user
+overrides them."
+
+**Cost, measured.** `SKILL.md` is 14,096 bytes / 225 lines, roughly 3,500 tokens,
+paid in every session on every surface where the skill is pinned. That is the
+real trade-off, not a formality: it buys always-resident discipline at the price
+of permanent context. Three options, in ascending cost:
+
+1. **Discoverable only** (current state). Installed and enabled; loads on demand
+   via skill search. Zero standing cost. Upstream would call this "installed but
+   not active".
+2. **Pointer digest.** A short always-resident note that instructs the agent to
+   load the full skill when a claim turns consequential. Cheap, but introduces a
+   second artifact that can drift from `SKILL.md`.
+3. **Full pin.** `auto_load: [anti-hallucination-protocol]`. Matches upstream's
+   stated requirement exactly; costs the full prompt in every session including
+   purely creative or T0/T1 work.
+
+Option 3 is the faithful reading of upstream's install contract. It has not been
+applied to the hosts in this fork's commit history because it is a global,
+every-session configuration change rather than a skill installation, and it
+belongs to the operator to accept the standing context cost.
+
+Whichever is chosen, verify it took effect rather than assuming: a healthy boot
+must visibly show the skill loaded. "Installed" and "active" are not the same
+claim.
+
 ## Syncing from upstream
 
 ```bash
