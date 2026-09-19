@@ -7,6 +7,27 @@ This documents why this fork exists and what it changes. Upstream v5.4.2 is
 substantively good and its own regression suite passes unmodified. The fork
 carries one correctness fix plus local deployment wiring; it is not a rewrite.
 
+## Fix 1 has been submitted upstream
+
+**PR:** https://github.com/antydizajn/anti-hallucination-protocol/pull/31
+**Branch:** `fix/error-vs-fail-integrity-checker` (5 files: the two scripts, the
+new test, plus README/SKILL.md notes)
+
+The PR branch is deliberately separate from `customizations`: it excludes this
+file and everything host-specific, and is built directly on `b021bcf` so it is a
+clean single-commit proposal against `main`.
+
+Upstream CI on the PR shows `action_required` with zero jobs. That is GitHub's
+first-time-contributor approval gate on the unprivileged `pull_request` boundary,
+not a red build — the workflow runs once a maintainer approves. Because that has
+not happened, the PR's CI status is unverified. What *is* verified is the same
+matrix run locally on the committed tree (156 passed on both 3.11 and 3.13, plus
+integrity/provenance/liveness all green), and the regression proof that all five
+new tests fail against unpatched `b021bcf`.
+
+Status: `PR OPEN != CHANGE ACCEPTED`. Do not treat the patch as upstream until it
+lands on `main`.
+
 ## Why this fork exists
 
 Upstream README prescribes a **mandatory startup integration**: the skill must be
