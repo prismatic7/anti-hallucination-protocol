@@ -11,6 +11,18 @@ entailment, web availability, or Hermes runtime behavior.
 
 A PASS means only that the checked repository structure and metadata contract
 are internally consistent for v5.4.2.
+
+Exit codes mirror verify_claim.py, so a missing dependency and a real contract
+violation are never collapsed into one another:
+  0 = PASS  (contract holds within this checker's stated scope)
+  1 = FAIL  (checker ran correctly; the contract was violated)
+  2 = ERROR (checker could not run correctly; no verdict on the contract)
+
+A missing PyYAML is an ERROR, not a FAIL. Without YAML the checker cannot parse
+frontmatter at all, so every required-key assertion would be vacuous and the
+resulting "FAIL" would be an artifact of the missing dependency rather than
+evidence about the skill. Reporting absence of a capability as a failed check is
+the exact ERROR -> NOT_FOUND collapse this protocol exists to prevent.
 """
 
 from __future__ import annotations
@@ -215,6 +227,16 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
     args = parser.parse_args()
+
+    if yaml is None:
+        print(
+            "ERROR: PyYAML is unavailable, so SKILL.md frontmatter cannot be parsed "
+            "and no verdict is returned. This is a checker-environment failure, not a "
+            "contract violation. Install PyYAML (python3 -m pip install pyyaml) or run "
+            "this checker with an interpreter that has it available.",
+            file=sys.stderr,
+        )
+        return 2
 
     try:
         errors = validate(args.root)

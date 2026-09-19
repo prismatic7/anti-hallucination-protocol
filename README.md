@@ -255,6 +255,23 @@ python3 scripts/check_research_provenance.py --root .
 AHP_SKILL_DIR="$(pwd)" bash scripts/liveness_check.sh
 ```
 
+`check_v5_integrity.py` requires PyYAML and reports three distinct outcomes, following the same convention as `verify_claim.py`:
+
+```text
+exit 0   PASS  - the contract holds within the checker's stated scope
+exit 1   FAIL  - the checker ran correctly; the contract was violated
+exit 2   ERROR - the checker could not run correctly (for example PyYAML is
+                 missing); no verdict on the contract was returned
+```
+
+A missing PyYAML is an `ERROR`, not a `FAIL`. Without YAML the checker cannot parse frontmatter at all, so the required-key assertions would be vacuous and a `FAIL` there would describe the environment rather than the skill. Reporting an absent capability as a failed check is the `ERROR -> NOT_FOUND` collapse this protocol exists to prevent.
+
+`liveness_check.sh` honours that distinction and probes for any interpreter on the host that can import PyYAML before running the structural checker. If it finds none, L2 reports a cannot-run condition rather than a contract failure. If you are on a host where the `python3` on `PATH` lacks PyYAML:
+
+```bash
+python3 -m pip install pyyaml
+```
+
 The repository also includes GitHub Actions regression CI across supported Python test environments. A green CI run establishes only the checked executable contracts, not model obedience or semantic truth.
 
 When the skill is loaded in Hermes and template substitution is enabled, a bundled checker can also be invoked without current-directory assumptions, for example:

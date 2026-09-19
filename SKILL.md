@@ -144,7 +144,7 @@ Helper contracts:
 - `scripts/verify_claim.py` - narrow deterministic filesystem/text/command checks;
 - `scripts/check_evidence_record.py` - schema + deterministic evidence-record invariants;
 - `scripts/check_research_provenance.py` - offline repository-internal research identity consistency;
-- `scripts/check_v5_integrity.py` - exact v5.4.2 repository/frontmatter integrity;
+- `scripts/check_v5_integrity.py` - exact v5.4.2 repository/frontmatter integrity (exit 0 `PASS`, exit 1 `FAIL` for a real contract violation, exit 2 `ERROR` when the checker cannot run, e.g. PyYAML is unavailable - a cannot-run condition is never a contract `FAIL`);
 - `scripts/liveness_check.sh` - portable L1/L2 presence and self-checks.
 
 `check_evidence_record.py` fails if the canonical schema gains an assertion keyword or schema form the checker does not implement. Silently ignoring a new schema constraint would make the checker weaker than the schema it claims to validate.

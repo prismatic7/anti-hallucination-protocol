@@ -63,10 +63,38 @@ if ! command -v python3 >/dev/null 2>&1; then
   fail_required "python3 unavailable; structural checker cannot run"
 elif [ ! -f "$INTEGRITY" ]; then
   fail_required "check_v5_integrity.py unavailable: $INTEGRITY"
-elif python3 "$INTEGRITY" --root "$SKILL_DIR" >/dev/null 2>&1; then
-  echo "  [OK]   v5.4.2 repository-local integrity checker passed"
 else
-  fail_required "v5.4.2 repository-local integrity checker failed"
+  # Prefer the ambient python3, but fall back to any interpreter on the host that
+  # can actually import PyYAML. Otherwise a PATH python3 lacking PyYAML would be
+  # reported as a structural FAIL, when the real condition is that the check could
+  # not run. ERROR must not be collapsed into NOT_FOUND.
+  INTEGRITY_PY=""
+  for candidate in python3 python3.14 python3.13 python3.12 python3.11 python3.10 python3.9 /usr/bin/python3; do
+    if command -v "$candidate" >/dev/null 2>&1 || [ -x "$candidate" ]; then
+      if "$candidate" -c 'import yaml' >/dev/null 2>&1; then
+        INTEGRITY_PY="$candidate"
+        break
+      fi
+    fi
+  done
+
+  if [ -z "$INTEGRITY_PY" ]; then
+    fail_required "structural checker cannot run: no available python3 can import PyYAML (ERROR, not a contract FAIL). Install PyYAML: python3 -m pip install pyyaml"
+  else
+    "$INTEGRITY_PY" "$INTEGRITY" --root "$SKILL_DIR" >/dev/null 2>&1
+    INTEGRITY_CODE=$?
+    case "$INTEGRITY_CODE" in
+      0)
+        echo "  [OK]   v5.4.2 repository-local integrity checker passed (interpreter: $INTEGRITY_PY)"
+        ;;
+      1)
+        fail_required "v5.4.2 repository-local integrity checker FAILED: the contract was violated"
+        ;;
+      *)
+        fail_required "structural checker could not complete (ERROR, exit $INTEGRITY_CODE): no verdict on the contract was returned"
+        ;;
+    esac
+  fi
 fi
 
 echo
